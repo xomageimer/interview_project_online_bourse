@@ -20,6 +20,13 @@ nlohmann::json core::BalanceRequest::getJson() const {
     return std::move(json);
 }
 
+nlohmann::json core::GetOwnRequests::getJson() const {
+    nlohmann::json json;
+    json["request_type"] = GET_OWN_REQUESTS;
+    json["user_id"] = user_id_;
+    return std::move(json);
+}
+
 nlohmann::json core::CancelRequest::getJson() const {
     nlohmann::json json;
     json["request_type"] = CANCEL_REQUEST;

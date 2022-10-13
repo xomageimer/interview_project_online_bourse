@@ -21,6 +21,12 @@ namespace core {
             return worker_->exec(transaction);
         }
 
+        pqxx::row MakeTransaction1(std::string const &transaction) {
+            if (!worker_)
+                worker_.emplace(connection_database_);
+            return worker_->exec1(transaction);
+        }
+
         void CommitTransactions() {
             std::lock_guard<std::mutex> lock(mut_);
             worker_->commit();

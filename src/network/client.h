@@ -10,41 +10,50 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <deque>
+
 namespace network {
 
     using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    using request_queue_ = std::deque<core::RequestType>;
 
     enum {
-        max_length = 2048
+        max_length = 8'192
     };
 
     struct Client {
     public:
-        Client(boost::asio::io_context& io_context,
-               boost::asio::ssl::context& context,
+        Client(boost::asio::io_context &io_context,
+               boost::asio::ssl::context &context,
                boost::asio::ip::tcp::resolver::results_type endpoints);
 
         bool verifyCertificate(bool preverified,
-                               boost::asio::ssl::verify_context & ctx);
+                               boost::asio::ssl::verify_context &ctx);
 
-        void write(const core::RequestType& request);
+        void write(const core::RequestType &request);
 
         void close();
 
-        void setUserId(std::string const & user_id);
-    private:
-        void doHandshake(const boost::system::error_code& error);
+        void setUserId(std::string const &user_id);
 
-        void doWrite(std::string const & req);
+        [[nodiscard]] std::string const &getUserId() const { return user_id_; }
+
+    private:
+        void doHandshake(const boost::system::error_code &error);
+
+        void doWrite();
 
         void doRead();
 
         ssl_socket socket_;
-        std::optional<std::string> user_id_;
+        std::string user_id_{"John Doe"};
         char data_[max_length];
+
+        request_queue_ pending_requests_;
+        char msg_[max_length];
     };
 
-    bool execResponse(const nlohmann::json &json, network::Client & my_client);
+    void execResponse(const nlohmann::json &json, network::Client &my_client);
 }
 
 #endif //BOURSE_CLIENT_H

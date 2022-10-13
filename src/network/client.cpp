@@ -36,20 +36,36 @@ void network::Client::doHandshake(const boost::system::error_code &error) {
                                     }
                                 });
     } else {
+        socket_.lowest_layer().close();
         LOG("Handshake failed: ", error.message());
     }
 }
 
-void network::Client::write(const core::RequestType& request) {
-    doWrite(request->getJson().dump());
+void network::Client::write(const core::RequestType &request) {
+    boost::asio::post(socket_.lowest_layer().get_executor(),
+                      [this, request]() mutable {
+                          bool write_in_progress = !pending_requests_.empty();
+                          pending_requests_.push_back(request);
+                          if (!write_in_progress) {
+                              doWrite();
+                          }
+                      });
 }
 
-void network::Client::doWrite(std::string const &req) {
+void network::Client::doWrite() {
+    auto req = pending_requests_.front()->getJson().dump();;
+    strcpy(msg_, req.c_str());
     boost::asio::async_write(socket_,
-                             boost::asio::buffer(req.data(), req.size()),
-                             [](boost::system::error_code ec,
-                                size_t bytes_transferred) {
-                                 if (ec) {
+                             boost::asio::buffer(msg_, req.size()),
+                             [this](boost::system::error_code ec,
+                                    size_t bytes_transferred) {
+                                 if (!ec) {
+                                     pending_requests_.pop_front();
+                                     if (!pending_requests_.empty()) {
+                                         doWrite();
+                                     }
+                                 } else {
+                                     socket_.lowest_layer().close();
                                      LOG("Write failed: ", ec.message());
                                  }
                              });
@@ -61,26 +77,48 @@ void network::Client::doRead() {
                                    size_t bytes_transferred) {
                                 if (!ec) {
                                     auto json_msg = nlohmann::json::parse(std::string(data_, bytes_transferred));
-                                    auto success = network::execResponse(json_msg,
-                                                       *this);
+                                    network::execResponse(json_msg,
+                                                          *this);
                                     doRead();
                                 } else {
+                                    socket_.lowest_layer().close();
                                     LOG("Write failed: ", ec.message());
                                 }
                             });
 }
 
 void network::Client::setUserId(const std::string &user_id) {
-    user_id_.emplace(user_id);
+    user_id_ = user_id;
 }
 
 void network::Client::close() {
     boost::asio::post(socket_.get_executor(), [this]() { socket_.lowest_layer().close(); });
 }
 
-bool network::execResponse(const nlohmann::json &json, network::Client &my_client) {
+void network::execResponse(const nlohmann::json &json, network::Client &my_client) {
     LOG("get to response by id ", json["response_type"]);
-    std::cout << "get response " << json["response_type"] << std::endl;
-
-    return true;
+    switch (json["response_type"].get<int>()) {
+        case core::ResponseAction::SUCCESS_SET_RESPONSE:
+            LOG("request type is success setting");
+            break;
+        case core::ResponseAction::BAD_RESPONSE:
+            LOG("request type is bad response");
+            break;
+        case core::ResponseAction::GET_BALANCE_RESPONSE:
+            LOG("request type is get balance");
+            break;
+        case core::ResponseAction::AUTHORIZATION_RESPONSE:
+            LOG("request type is authorization");
+            my_client.setUserId(json["user_id_"]);
+            break;
+        case core::ResponseAction::UPDATE_QUOTATION_RESPONSE:
+            LOG("request type is update quotation");
+            break;
+        case core::ResponseAction::REPORT:
+            LOG("request type is reporting");
+            break;
+        default:
+            LOG("wrong response type, mb server was hacking!");
+            break;
+    }
 }

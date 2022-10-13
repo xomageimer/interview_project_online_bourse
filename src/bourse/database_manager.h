@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <mutex>
 
 #include <pqxx/pqxx>
 
@@ -20,7 +21,8 @@ namespace core {
             return worker_->exec(transaction);
         }
 
-        void CommitTransaction() {
+        void CommitTransactions() {
+            std::lock_guard<std::mutex> lock(mut_);
             worker_->commit();
             worker_.reset();
         }
@@ -28,6 +30,7 @@ namespace core {
     private:
         pqxx::connection connection_database_;
         std::optional<pqxx::work> worker_;
+        std::mutex mut_;
     };
 }
 

@@ -45,7 +45,7 @@ include_directories(src)
 
 include_directories(src/utils)
 
-add_library(helper SHARED src/utils/logger.cpp src/utils/logger.h)
+add_library(helper SHARED src/utils/logger.cpp src/utils/logger.h src/utils/auxiliary.h src/utils/auxiliary.cpp)
 
 add_compile_definitions(FILE_LOGGER)
 

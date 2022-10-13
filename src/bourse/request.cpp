@@ -20,13 +20,6 @@ nlohmann::json core::BalanceRequest::getJson() const {
     return std::move(json);
 }
 
-nlohmann::json core::GetOwnRequests::getJson() const {
-    nlohmann::json json;
-    json["request_type"] = GET_OWN_REQUESTS;
-    json["user_id"] = user_id_;
-    return std::move(json);
-}
-
 nlohmann::json core::CancelRequest::getJson() const {
     nlohmann::json json;
     json["request_type"] = CANCEL_REQUEST;
@@ -51,9 +44,9 @@ nlohmann::json core::RegistrationRequest::getJson() const {
     return std::move(json);
 }
 
-nlohmann::json core::UpdateQuotationRequest::getJson() const {
+nlohmann::json core::UpdateRequest::getJson() const {
     nlohmann::json json;
-    json["request_type"] = UPDATE_QUOTATION_REQUEST;
+    json["request_type"] = UPDATE_REQUEST;
     json["user_id"] = user_id_;
     return std::move(json);
 }

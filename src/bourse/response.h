@@ -19,7 +19,7 @@ namespace core {
         BAD_RESPONSE,
         GET_BALANCE_RESPONSE,
         AUTHORIZATION_RESPONSE,
-        UPDATE_QUOTATION_RESPONSE,
+        UPDATE_RESPONSE,
         REPORT
     };
 
@@ -62,14 +62,24 @@ namespace core {
        std::string user_id_;
     };
 
-    struct UpdateQuotationResponse : public IResponse {
+    struct UpdateResponse : public IResponse {
     public:
-        explicit UpdateQuotationResponse(std::vector<std::pair<int, int>> v) : usd_by_rub_(std::move(v)) {}
+        struct RequestInfo{
+            int id;
+            int user_id;
+            std::string type_of_operation;
+            int usd_count;
+            int rub_price;
+            bool active;
+        };
+
+        explicit UpdateResponse(std::vector<std::pair<int, int>> v, std::vector<RequestInfo> reqs) : usd_by_rub_(std::move(v)), requests_(std::move(reqs)) {}
 
         [[nodiscard]] nlohmann::json getJson() const override;
 
     private:
         std::vector<std::pair<int, int>> usd_by_rub_;
+        std::vector<RequestInfo> requests_;
     };
 
     struct BadResponse : public IResponse {

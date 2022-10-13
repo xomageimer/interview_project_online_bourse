@@ -26,10 +26,18 @@ nlohmann::json core::AccessAuthResponse::getJson() const {
     return std::move(json);
 }
 
-nlohmann::json core::UpdateQuotationResponse::getJson() const {
+nlohmann::json core::UpdateResponse::getJson() const {
     nlohmann::json json;
-    json["response_type"] = UPDATE_QUOTATION_RESPONSE;
+    json["response_type"] = UPDATE_RESPONSE;
     json["quotation"] = usd_by_rub_;
+    for (size_t i = 0; i < requests_.size(); i++) {
+        json["requests"][i]["id"] = requests_[i].id;
+        json["requests"][i]["user_id"] = requests_[i].user_id;
+        json["requests"][i]["type_of_operation"] = requests_[i].type_of_operation;
+        json["requests"][i]["usd_count"] = requests_[i].usd_count;
+        json["requests"][i]["rub_price"] = requests_[i].rub_price;
+        json["requests"][i]["active"] = requests_[i].active;
+    }
     return std::move(json);
 }
 

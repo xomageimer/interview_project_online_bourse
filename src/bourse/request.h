@@ -17,8 +17,7 @@ namespace core {
         CANCEL_REQUEST,
         AUTHORIZATION_REQUEST,
         REGISTER_REQUEST,
-        UPDATE_QUOTATION_REQUEST,
-        GET_OWN_REQUESTS
+        UPDATE_REQUEST,
     };
 
     struct IRequest {
@@ -52,11 +51,6 @@ namespace core {
     };
 
     struct BalanceRequest : public IRequest {
-    public:
-        [[nodiscard]] nlohmann::json getJson() const override;
-    };
-
-    struct GetOwnRequests : public IRequest {
     public:
         [[nodiscard]] nlohmann::json getJson() const override;
     };
@@ -95,7 +89,7 @@ namespace core {
         std::string password_;
     };
 
-    struct UpdateQuotationRequest : public IRequest {
+    struct UpdateRequest : public IRequest {
     public:
         using IRequest::IRequest;
 

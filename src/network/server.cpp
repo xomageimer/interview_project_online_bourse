@@ -11,7 +11,7 @@ network::Server::Server(boost::asio::io_context &io_context, unsigned short port
                                                                                                       port)),
                                                                                     context_(
                                                                                             boost::asio::ssl::context::sslv23),
-                                                                                            port_(port){
+                                                                                    port_(port) {
     context_.set_options(
             boost::asio::ssl::context::default_workarounds
             | boost::asio::ssl::context::no_sslv2
@@ -48,10 +48,12 @@ void network::Session::start() {
 
 void network::Session::doRead() {
     socket_.async_read_some(boost::asio::buffer(data_, max_length),
-                            [this, self=shared_from_this()](boost::system::error_code ec,
-                                         size_t bytes_transferred){
-                                if (!ec){
-                                    std::shared_ptr<core::IResponse> resp = network::execRequest(nlohmann::json::parse(std::string(data_, bytes_transferred)), database.lock());
+                            [this, self = shared_from_this()](boost::system::error_code ec,
+                                                              size_t bytes_transferred) {
+                                if (!ec) {
+                                    std::shared_ptr<core::IResponse> resp = network::execRequest(
+                                            nlohmann::json::parse(std::string(data_, bytes_transferred)),
+                                            database.lock());
                                     auto reply = resp->getJson().dump();
                                     doWrite(reply);
                                     LOG(user_id_, " Success read and responses on request");
@@ -61,21 +63,49 @@ void network::Session::doRead() {
                             });
 }
 
-void network::Session::doWrite(std::string const & resp) {
+void network::Session::doWrite(std::string const &resp) {
     boost::asio::async_write(socket_,
                              boost::asio::buffer(resp.data(), resp.size()),
-                             [this, self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred){
-        if (!ec) {
-            doRead();
-            LOG(user_id_, " Success write: ", ec.message());
-        } else {
-            LOG(user_id_, " ERROR on write: ", ec.message());
-        }
-    });
+                             [this, self = shared_from_this()](boost::system::error_code ec, size_t bytes_transferred) {
+                                 if (!ec) {
+                                     doRead();
+                                 } else {
+                                     LOG(user_id_, " ERROR on write: ", ec.message());
+                                 }
+                             });
 }
 
 
-core::ResponseType network::execRequest(const nlohmann::json &json, const std::shared_ptr<core::DataBaseManager>& db_manager) {
-    std::cout << json["request_type"];
-    return nullptr;
+core::ResponseType
+network::execRequest(const nlohmann::json &json, const std::shared_ptr<core::DataBaseManager> &db_manager) {
+    if (json.contains("user_id")) {
+        LOG("get request from ", json["user_id"]);
+    }
+    switch (json["request_type"].get<int>()) {
+        case core::RequestAction::SELL_USD_REQUEST:
+            LOG("request type is sell usd");
+            break;
+        case core::RequestAction::BUY_USD_REQUEST:
+            LOG("request type is buy usd");
+            break;
+        case core::RequestAction::GET_BALANCE_REQUEST:
+            LOG("request type is get balance");
+            break;
+        case core::RequestAction::CANCEL_REQUEST:
+            LOG("request type is cancel request");
+            break;
+        case core::RequestAction::AUTHORIZATION_REQUEST:
+            LOG("request type is authorization");
+            break;
+        case core::RequestAction::REGISTER_REQUEST:
+            LOG("request type is registration");
+            break;
+        case core::RequestAction::UPDATE_QUOTATION_REQUEST:
+            LOG("request type is update quoatation");
+            break;
+        default:
+            LOG("wrong request type, should send bad response!");
+            break;
+    }
+    return std::make_shared<core::BadResponse>("test response");
 }

@@ -27,7 +27,7 @@ namespace network {
         bool verifyCertificate(bool preverified,
                                boost::asio::ssl::verify_context & ctx);
 
-        void write(core::RequestType request);
+        void write(const core::RequestType& request);
 
         void close();
 

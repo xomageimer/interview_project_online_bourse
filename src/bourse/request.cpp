@@ -52,5 +52,12 @@ nlohmann::json core::UpdateQuotationRequest::getJson() const {
 }
 
 std::shared_ptr<core::IRequest> core::makeRequest(const std::string &msg) {
-    return std::make_shared<RegistrationRequest>("aboba", "12345");
+    if (msg == "SELL") {
+        int usd_count;
+        int rub_price;
+        std::cout << "input usd u want to sell and rub price" << std::endl;
+        std::cin >> usd_count >> rub_price;
+        return std::make_shared<core::CreateLotRequest>("qweqe", usd_count, rub_price, core::CreateLotRequest::OperationType::SELL_USD);
+    }
+    return nullptr;
 }

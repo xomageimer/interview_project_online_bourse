@@ -23,9 +23,8 @@ int main(int argc, char *argv[]) {
 
         std::thread t([&io_context]() { io_context.run(); });
 
-        char line[network::max_length];
-        while (std::cin.getline(line, network::max_length + 1)) {
-            std::string msg;
+        std::string msg {};
+        while (std::cin >> msg && msg != "EXIT") {
             c.write(core::makeRequest(msg));
         }
 

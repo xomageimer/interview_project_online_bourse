@@ -40,7 +40,7 @@ void network::Client::doHandshake(const boost::system::error_code &error) {
     }
 }
 
-void network::Client::write(core::RequestType request) {
+void network::Client::write(const core::RequestType& request) {
     doWrite(request->getJson().dump());
 }
 
@@ -60,10 +60,9 @@ void network::Client::doRead() {
                             [this](boost::system::error_code ec,
                                    size_t bytes_transferred) {
                                 if (!ec) {
-//                                    core::execResponse(nlohmann::json::parse(std::string(data_, bytes_transferred)),
-//                                                       *this);
-                                    std::cout << nlohmann::json::parse(
-                                            std::string(data_, bytes_transferred))["response_type"];
+                                    auto json_msg = nlohmann::json::parse(std::string(data_, bytes_transferred));
+                                    auto success = network::execResponse(json_msg,
+                                                       *this);
                                     doRead();
                                 } else {
                                     LOG("Write failed: ", ec.message());
@@ -80,6 +79,8 @@ void network::Client::close() {
 }
 
 bool network::execResponse(const nlohmann::json &json, network::Client &my_client) {
-    std::cout << json["response_type"] << std::endl;
+    LOG("get to response by id ", json["response_type"]);
+    std::cout << "get response " << json["response_type"] << std::endl;
+
     return true;
 }

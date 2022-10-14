@@ -10,28 +10,15 @@
 namespace core {
     struct DataBaseManager : public std::enable_shared_from_this<DataBaseManager> {
     public:
-        explicit DataBaseManager(const std::string &connection_string) : connection_database_(
-                connection_string.c_str()) {}
+        explicit DataBaseManager(const std::string &connection_string);
 
         auto Get() { return shared_from_this(); }
 
-        pqxx::result MakeTransaction(std::string const &transaction) {
-            if (!worker_)
-                worker_.emplace(connection_database_);
-            return worker_->exec(transaction);
-        }
+        pqxx::result MakeTransaction(std::string const &transaction);
 
-        pqxx::row MakeTransaction1(std::string const &transaction) {
-            if (!worker_)
-                worker_.emplace(connection_database_);
-            return worker_->exec1(transaction);
-        }
+        pqxx::row MakeTransaction1(std::string const &transaction);
 
-        void CommitTransactions() {
-            std::lock_guard<std::mutex> lock(mut_);
-            worker_->commit();
-            worker_.reset();
-        }
+        void CommitTransactions();
 
     private:
         pqxx::connection connection_database_;

@@ -50,6 +50,8 @@ namespace network {
     private:
         response_queue execRequest(nlohmann::json const & json);
 
+        void close();
+
         Server & server_;
 
         std::string user_id_ = "John Doe";

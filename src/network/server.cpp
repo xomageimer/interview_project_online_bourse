@@ -45,7 +45,7 @@ void network::Session::start() {
                                     doRead();
                                     LOG(user_id_, " Success handshake");
                                 } else {
-                                    socket_.lowest_layer().close();
+                                    close();
                                     LOG(user_id_, " ERROR on handshake: ", ec.message());
                                 }
                             });
@@ -67,7 +67,7 @@ void network::Session::doRead() {
                                     }
                                     LOG(user_id_, " Success read and responses on request");
                                 } else {
-                                    socket_.lowest_layer().close();
+                                    close();
                                     LOG(user_id_, " ERROR on read: ", ec.message());
                                 }
                             });
@@ -85,10 +85,18 @@ void network::Session::doWrite() {
                                          doWrite();
                                      } else doRead();
                                  } else {
-                                     socket_.lowest_layer().close();
+                                     close();
                                      LOG(user_id_, " ERROR on write: ", ec.message());
                                  }
                              });
+}
+
+void network::Session::close() {
+    if (user_id_ != "John Doe" && getServer().active_users_.count(user_id_)) {
+        getServer().active_sessions_.erase(getServer().active_users_.at(user_id_));
+        getServer().active_users_.erase(user_id_);
+    }
+    socket_.lowest_layer().close();
 }
 
 network::Server::TransactionInfo
@@ -150,6 +158,8 @@ network::Server::closeRequest(int seller_id, int buyer_id, int usd_buying, bool 
             "UPDATE data SET rub_balance = rub_balance + " +
             std::to_string(usd_buying * rub_price) + " WHERE user_id = " +
             std::to_string(seller_id));
+
+    database_manager_->CommitTransactions();
 
     return {id, usd_count, rub_price, seller_name, buyer_name};
 }
@@ -241,7 +251,7 @@ network::Session::execRequest(const nlohmann::json &json) {
     switch (json["request_type"].get<int>()) {
         case core::RequestAction::SELL_USD_REQUEST: {
             LOG("request type is sell usd");
-            if (getServer().active_users_.count(json["user_id"]))
+            if (!getServer().active_users_.count(json["user_id"]))
                 return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto res_id = getServer().database_manager_->
@@ -301,7 +311,7 @@ network::Session::execRequest(const nlohmann::json &json) {
         }
         case core::RequestAction::BUY_USD_REQUEST: {
             LOG("request type is buy usd");
-            if (getServer().active_users_.count(json["user_id"]))
+            if (!getServer().active_users_.count(json["user_id"]))
                 return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto res_id = getServer().database_manager_->
@@ -334,7 +344,7 @@ network::Session::execRequest(const nlohmann::json &json) {
 
                         trans_info = getServer().closeRequest(matching_requests[0][1].as<int>(),
                                                               getServer().active_users_.at(json["user_id"]), usd_buying,
-                                                              false);
+                                                              true);
                     } else if (json["usd_count"].get<int>() < matching_requests[0][3].as<int>()) {
                         usd_buying = json["usd_count"].get<int>();
 
@@ -364,7 +374,7 @@ network::Session::execRequest(const nlohmann::json &json) {
         }
         case core::RequestAction::GET_BALANCE_REQUEST: {
             LOG("request type is get balance");
-            if (getServer().active_users_.count(json["user_id"]))
+            if (!getServer().active_users_.count(json["user_id"]))
                 return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto usd = getServer().database_manager_->
@@ -379,7 +389,7 @@ network::Session::execRequest(const nlohmann::json &json) {
         }
         case core::RequestAction::CANCEL_REQUEST: {
             LOG("request type is cancel request");
-            if (getServer().active_users_.count(json["user_id"]))
+            if (!getServer().active_users_.count(json["user_id"]))
                 return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto request_owner = getServer().database_manager_->
@@ -407,12 +417,12 @@ network::Session::execRequest(const nlohmann::json &json) {
         case core::RequestAction::REGISTER_REQUEST: {
             LOG("request type is registration");
             auto name = getServer().database_manager_->
-                    MakeTransaction("SELECT id FROM data WHERE user_name=" +
-                                    (json["name"].dump()));
+                    MakeTransaction("SELECT id FROM data WHERE user_name=\'" +
+                                    unquoted(json["name"].dump()) + "\'");
             if (name.empty()) {
                 getServer().database_manager_->
                         MakeTransaction("INSERT INTO data (user_name, password, usd_count, rub_balance) values(\'" +
-                                        json["name"].dump() + "\',\'" + GetSHA1(json["password"].dump()) +
+                                                unquoted(json["name"].dump()) + "\',\'" + GetSHA1(unquoted(json["password"].dump())) +
                                         "\', 0, 0)");
                 getServer().database_manager_->CommitTransactions();
             } else {
@@ -422,8 +432,8 @@ network::Session::execRequest(const nlohmann::json &json) {
         case core::RequestAction::AUTHORIZATION_REQUEST: {
             LOG("request type is authorization");
             auto user_data = getServer().database_manager_->
-                    MakeTransaction("SELECT id, password FROM data WHERE user_name=" +
-                                    (json["name"].dump()));
+                    MakeTransaction("SELECT id, password FROM data WHERE user_name=\'" +
+                                            unquoted(json["name"].dump()) + "\'");
             if (user_data.empty() || strcmp(user_data[0][1].c_str(), GetSHA1(json["password"].dump()).c_str()) != 0) {
                 return {std::make_shared<core::BadResponse>("wrong password or name")};
             }
@@ -439,7 +449,7 @@ network::Session::execRequest(const nlohmann::json &json) {
         }
         case core::RequestAction::UPDATE_REQUEST: {
             LOG("request type is update quotation");
-            if (getServer().active_users_.count(json["user_id"]))
+            if (!getServer().active_users_.count(json["user_id"]))
                 return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto quotation = getServer().database_manager_->MakeTransaction(

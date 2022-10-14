@@ -22,7 +22,7 @@ namespace core {
 
     private:
         pqxx::connection connection_database_;
-        std::optional<pqxx::work> worker_;
+        std::optional<pqxx::work> worker_ = std::nullopt;
         std::mutex mut_;
     };
 }

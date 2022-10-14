@@ -110,8 +110,9 @@ void network::execResponse(const nlohmann::json &json, network::Client &my_clien
         case core::ResponseAction::AUTHORIZATION_RESPONSE:
             LOG("request type is authorization");
             my_client.setUserId(json["user_id_"]);
+            std::cerr << "authorized: " << my_client.getUserId() << std::endl;
             break;
-        case core::ResponseAction::UPDATE_QUOTATION_RESPONSE:
+        case core::ResponseAction::UPDATE_RESPONSE:
             LOG("request type is update quotation");
             break;
         case core::ResponseAction::REPORT:

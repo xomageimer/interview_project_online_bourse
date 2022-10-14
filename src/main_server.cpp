@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
         boost::asio::io_context io_context;
 
         std::string connection_string = "host=" + std::string(argv[2]) + " port=" + std::string(argv[3]) +
-                "dbname=" + std::string(argv[4]) + " user=" + std::string(argv[5]) + " password=" + std::string(argv[6]);
+                " dbname=" + std::string(argv[4]) + " user=" + std::string(argv[5]) + " password=" + std::string(argv[6]);
         network::Server s(io_context, std::atoi(argv[1]), std::make_shared<core::DataBaseManager>(connection_string));
 
         io_context.run();

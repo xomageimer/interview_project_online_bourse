@@ -6,8 +6,11 @@
 #include <type_traits>
 
 #include <string>
+#include <string_view>
 
 std::string GetSHA1(const std::string &p_arg);
+
+std::string unquoted(const std::string & str);
 
 struct random_generator : public std::mt19937_64 {
 public:

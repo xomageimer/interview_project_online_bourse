@@ -3,30 +3,30 @@
 #include <boost/compute/detail/sha1.hpp>
 #include <boost/function_output_iterator.hpp>
 
-std::string GetSHA1(const std::string &p_arg) {
+std::string GetSHA1(const std::string& p_arg)
+{
     boost::uuids::detail::sha1 sha1;
     sha1.process_bytes(p_arg.data(), p_arg.size());
     unsigned hash[5] = {0};
     sha1.get_digest(hash);
 
-    union value_type {
-        unsigned full;
-        unsigned char u8[sizeof(unsigned)];
-    } dest{};
-    for (auto &el : hash) {
-        value_type source{};
-        source.full = el;
+    // Back to string
+    char buf[41] = {0};
 
-        for (size_t k = 0; k < sizeof(unsigned); k++) {
-            dest.u8[k] = source.u8[sizeof(unsigned) - k - 1];
-        }
-        el = dest.full;
+    for (int i = 0; i < 5; i++)
+    {
+        std::sprintf(buf + (i << 3), "%08x", hash[i]);
     }
 
-    char str_hash[sizeof(unsigned) * 5];
+    return std::string(buf);
+}
 
-    memcpy(str_hash, (char *)&hash, sizeof(unsigned) * 5);
-    return {str_hash, std::size(str_hash)};
+std::string unquoted(const std::string & str) {
+    if (str.size() > 1 && (str.front() == '\'' || str.front() == '\"')
+        && (str.back() == '\'' || str.back() == '\"'))
+        return str.substr(1, str.size()-2);
+
+    return str;
 }
 
 random_generator &random_generator::Random() {

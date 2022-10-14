@@ -58,6 +58,24 @@ std::shared_ptr<core::IRequest> core::makeRequest(const std::string &msg) {
         std::cout << "input usd u want to sell and rub price" << std::endl;
         std::cin >> usd_count >> rub_price;
         return std::make_shared<core::CreateLotRequest>("qweqe", usd_count, rub_price, core::CreateLotRequest::OperationType::SELL_USD);
+    } else if (msg == "REG") {
+        std::string name;
+        std::string password = "0";
+        std::cout << "enter your login: "<< std::flush;
+        std::cin >> name;
+        std::string repeat_password = "1";
+        bool first = true;
+        do {
+            if (!first){
+                std::cout << "The passwords don't match" << std::endl;
+            }
+            first = false;
+            std::cout << "enter your password:  "<< std::flush;;
+            std::cin >> password;
+            std::cout << "repeat your password: ";
+            std::cin >> repeat_password;
+        } while (password != repeat_password);
+        return std::make_shared<core::RegistrationRequest>(name, password);
     }
     return nullptr;
 }

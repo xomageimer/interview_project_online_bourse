@@ -23,8 +23,6 @@ namespace core {
         REPORT
     };
 
-    // TODO надо как-то выполнять exec, но в том ли месте оно должно быть?
-
     struct IResponse {
         virtual ~IResponse() = default;
 

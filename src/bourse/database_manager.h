@@ -10,7 +10,7 @@
 namespace core {
     struct DataBaseManager : public std::enable_shared_from_this<DataBaseManager> {
     public:
-        explicit DataBaseManager(const std::string &connection_string);
+        explicit DataBaseManager(std::string const & owner_name, const std::string &connection_string);
 
         auto Get() { return shared_from_this(); }
 
@@ -21,6 +21,9 @@ namespace core {
         void CommitTransactions();
 
     private:
+        void createTables();
+
+        std::string owner_name_;
         pqxx::connection connection_database_;
         std::optional<pqxx::work> worker_ = std::nullopt;
         std::mutex mut_;

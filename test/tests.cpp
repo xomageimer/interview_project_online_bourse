@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
 
     std::string connection_string = "host=" + std::string(argv[1]) + " port=" + std::string(argv[2]) +
                                     " dbname=" + std::string(argv[3]) + " user=" + std::string(argv[4]) + " password=" + std::string(argv[5]);
-    db_manager = std::make_shared<core::DataBaseManager>(connection_string);
+    db_manager = std::make_shared<core::DataBaseManager>(std::string(argv[4]), connection_string);
 
     int new_argc = argc - 6;
     if (new_argc)

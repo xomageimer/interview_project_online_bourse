@@ -54,7 +54,7 @@ namespace core {
 
     struct BalanceRequest : public IRequest {
     public:
-        using IRequest::IRequest;
+        explicit BalanceRequest(std::string const & user_id) : IRequest(user_id) {}
 
         [[nodiscard]] nlohmann::json getJson() const override;
     };

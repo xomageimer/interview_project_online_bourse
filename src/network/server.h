@@ -114,9 +114,9 @@ namespace network {
                                std::unordered_map<int, std::weak_ptr<network::ISession>> & active_sessions,
                                std::unordered_map<std::string, int> & active_users);
 
-    Server::TransactionInfo closeRequest(int seller_id, int buyer_id, int usd_buying, bool is_sellout, std::shared_ptr<core::DataBaseManager> database_manager);
+    Server::TransactionInfo closeRequest(int request_id, int seller_id, int buyer_id, int usd_buying, int rub_price, std::shared_ptr<core::DataBaseManager> database_manager);
 
-    Server::TransactionInfo closeTwoWayRequests(int seller_id, int buyer_id, int usd_buying, std::shared_ptr<core::DataBaseManager> database_manager);
+    Server::TransactionInfo closeTwoWayRequests(int request_id_seller, int request_id_buyer, int seller_id, int buyer_id, int usd_buying, int rub_price, std::shared_ptr<core::DataBaseManager> database_manager);
 }
 
 #endif //BOURSE_SERVER_H

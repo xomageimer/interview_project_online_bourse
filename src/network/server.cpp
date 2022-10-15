@@ -141,26 +141,27 @@ network::execRequest(const nlohmann::json &json, std::shared_ptr<network::ISessi
                 if (matching_requests.empty())
                     break;
 
-                for (size_t i = 0; i < matching_requests.size() && usd_selling != json["usd_count"].get<int>(); i++) {
+                for (int i = 0; i < matching_requests.size() && usd_selling != json["usd_count"].get<int>(); i++) {
                     network::Server::TransactionInfo trans_info;
-                    if (json["usd_count"].get<int>() > matching_requests[0][3].as<int>()) {
-                        usd_selling += matching_requests[0][3].as<int>();
+                    if (json["usd_count"].get<int>() > matching_requests[i][3].as<int>()) {
+                        usd_selling += matching_requests[i][3].as<int>();
 
-                        trans_info = closeRequest(active_users.at(json["user_id"]),
-                                                                             matching_requests[0][1].as<int>(), usd_selling, false, database_manager);
-                    } else if (json["usd_count"].get<int>() < matching_requests[0][3].as<int>()) {
+                        trans_info = closeRequest(matching_requests[i][0].as<int>(), active_users.at(json["user_id"]),
+                                                                             matching_requests[i][1].as<int>(), matching_requests[i][3].as<int>(), matching_requests[i][4].as<int>(),
+                                                                                     database_manager);
+                    } else if (json["usd_count"].get<int>() < matching_requests[i][3].as<int>()) {
                         usd_selling = json["usd_count"].get<int>();
 
-                        trans_info = closeRequest(active_users.at(json["user_id"]),
-                                                                             matching_requests[0][1].as<int>(), usd_selling, true, database_manager);
+                        trans_info = closeRequest(std::atoi(res_id[0][0].c_str()), active_users.at(json["user_id"]),
+                                                                             matching_requests[0][1].as<int>(), usd_selling, matching_requests[i][4].as<int>(), database_manager);
                     } else {
                         usd_selling = json["usd_count"].get<int>();
 
-                        trans_info = closeTwoWayRequests(active_users.at(json["user_id"]),
-                                                                                    matching_requests[0][1].as<int>(), usd_selling, database_manager);
+                        trans_info = closeTwoWayRequests(std::atoi(res_id[0][0].c_str()), matching_requests[i][0].as<int>(), active_users.at(json["user_id"]),
+                                                                                    matching_requests[i][1].as<int>(), usd_selling, matching_requests[i][4].as<int>(), database_manager);
                     }
-                    if (active_sessions.count(matching_requests[0][1].as<int>())) {
-                        auto session_ptr = active_sessions.at(matching_requests[0][1].as<int>());
+                    if (active_sessions.count(matching_requests[i][1].as<int>())) {
+                        auto session_ptr = active_sessions.at(matching_requests[i][1].as<int>());
                         if (!session_ptr.expired()) {
                             session_ptr.lock()->addResponsesQueue(std::make_shared<core::Report>(
                                     trans_info.id, trans_info.usd_count, trans_info.rub_price, trans_info.seller_name,
@@ -203,29 +204,28 @@ network::execRequest(const nlohmann::json &json, std::shared_ptr<network::ISessi
                 if (matching_requests.empty())
                     break;
 
-                for (size_t i = 0; i < matching_requests.size() && usd_buying != json["usd_count"].get<int>(); i++) {
+                for (int i = 0; i < matching_requests.size() && usd_buying != json["usd_count"].get<int>(); i++) {
                     network::Server::TransactionInfo trans_info;
-                    if (json["usd_count"].get<int>() > matching_requests[0][3].as<int>()) {
-                        usd_buying += matching_requests[0][3].as<int>();
+                    if (json["usd_count"].get<int>() > matching_requests[i][3].as<int>()) {
+                        usd_buying += matching_requests[i][3].as<int>();
 
-                        trans_info = closeRequest(matching_requests[0][1].as<int>(),
-                                                                             active_users.at(json["user_id"]), usd_buying,
-                                                                             true, database_manager);
-                    } else if (json["usd_count"].get<int>() < matching_requests[0][3].as<int>()) {
+                        trans_info = closeRequest(matching_requests[i][0].as<int>(), matching_requests[i][1].as<int>(),
+                                                                             active_users.at(json["user_id"]), matching_requests[i][3].as<int>(), matching_requests[i][4].as<int>(),
+                                                                             database_manager);
+                    } else if (json["usd_count"].get<int>() < matching_requests[i][3].as<int>()) {
                         usd_buying = json["usd_count"].get<int>();
 
-                        trans_info = closeRequest(matching_requests[0][1].as<int>(),
-                                                                             active_users.at(json["user_id"]), usd_buying,
-                                                                             false, database_manager);
+                        trans_info = closeRequest(std::atoi(res_id[0][0].c_str()), matching_requests[i][1].as<int>(),
+                                                                             active_users.at(json["user_id"]), usd_buying, matching_requests[i][4].as<int>(),
+                                                                             database_manager);
                     } else {
                         usd_buying = json["usd_count"].get<int>();
 
-                        trans_info = closeTwoWayRequests(matching_requests[0][1].as<int>(),
-                                                                                    active_users.at(json["user_id"]),
-                                                                                    usd_buying, database_manager);
+                        trans_info = closeTwoWayRequests(matching_requests[i][0].as<int>(), std::atoi(res_id[0][0].c_str()), matching_requests[i][1].as<int>(), active_users.at(json["user_id"]), usd_buying, matching_requests[i][4].as<int>(),
+                                                                                    database_manager);
                     }
-                    if (active_sessions.count(matching_requests[0][1].as<int>())) {
-                        auto session_ptr = active_sessions.at(matching_requests[0][1].as<int>());
+                    if (active_sessions.count(matching_requests[i][1].as<int>())) {
+                        auto session_ptr = active_sessions.at(matching_requests[i][1].as<int>());
                         if (!session_ptr.expired()) {
                             session_ptr.lock()->addResponsesQueue(std::make_shared<core::Report>(
                                     trans_info.id, trans_info.usd_count, trans_info.rub_price, trans_info.seller_name,
@@ -263,8 +263,9 @@ network::execRequest(const nlohmann::json &json, std::shared_ptr<network::ISessi
             auto request_owner = database_manager->
                     MakeTransaction("SELECT user_id FROM requests WHERE id=" +
                                     std::to_string(json["request_id"].get<int>()));
-            if (!strcmp(request_owner[0][0].c_str(),
-                        std::to_string(active_users.count(json["user_id"])).c_str())) {
+
+            if (request_owner[0][0].get<int>() ==
+                       active_users.at(json["user_id"])) {
                 auto is_active = database_manager->
                         MakeTransaction("SELECT active FROM requests WHERE id=" +
                                         std::to_string(json["request_id"].get<int>()));
@@ -358,28 +359,32 @@ network::execRequest(const nlohmann::json &json, std::shared_ptr<network::ISessi
     return new_responses;
 }
 
-network::Server::TransactionInfo network::closeRequest(int seller_id, int buyer_id, int usd_buying, bool is_sellout,
+network::Server::TransactionInfo network::closeRequest(int request_id, int seller_id, int buyer_id, int usd_buying, int rub_price,
                                                        std::shared_ptr<core::DataBaseManager> database_manager) {
-    auto seller_name = database_manager->
+    auto seller_res = database_manager->
             MakeTransaction("SELECT user_name FROM data WHERE id = " +
                             std::to_string(
-                                    seller_id))[0][0].c_str();
+                                    seller_id));
 
-    auto buyer_name = database_manager->
+    auto buyer_res = database_manager->
             MakeTransaction("SELECT user_name FROM data WHERE id = " +
-                            std::to_string(buyer_id))[0][0].c_str();
+                            std::to_string(buyer_id));
+
+    std::string seller_name = seller_res[0][0].c_str();
+
+    std::string buyer_name = buyer_res[0][0].c_str();
 
     pqxx::row row = database_manager->
             MakeTransaction1("SELECT * FROM requests "
-                             "WHERE user_id=" + std::to_string(is_sellout ? seller_id : buyer_id));
-    auto[id, user_id, type_of_operation, usd_count, rub_price, is_active] = row.as<int, int, std::string,
+                             "WHERE user_id=" + std::to_string(request_id));
+    auto[id, user_id, type_of_operation, usd_count, _, is_active] = row.as<int, int, std::string,
             int, int, bool>();
 
     database_manager->
             MakeTransaction(
             "UPDATE requests SET usd_count = usd_count - " + std::to_string(usd_buying) +
             " WHERE user_id = " +
-            std::to_string(is_sellout ? buyer_id : seller_id));
+            std::to_string(user_id == seller_id ? buyer_id : seller_id));
 
     database_manager->
             MakeTransaction(std::string(
@@ -402,8 +407,8 @@ network::Server::TransactionInfo network::closeRequest(int seller_id, int buyer_
 
     database_manager->
             MakeTransaction(
-            "UPDATE data SET rub_balance = rub_balance - \'" +
-            std::to_string(rub_price * usd_buying) + "\' WHERE id = " +
+            "UPDATE data SET rub_balance = rub_balance - " +
+            std::to_string(rub_price * usd_buying) + " WHERE id = " +
             std::to_string(buyer_id));
 
     database_manager->
@@ -423,27 +428,31 @@ network::Server::TransactionInfo network::closeRequest(int seller_id, int buyer_
     return {id, usd_count, rub_price, seller_name, buyer_name};
 }
 
-network::Server::TransactionInfo network::closeTwoWayRequests(int seller_id, int buyer_id, int usd_buying,
+network::Server::TransactionInfo network::closeTwoWayRequests(int request_id_seller, int request_id_buyer, int seller_id, int buyer_id, int usd_buying, int rub_price,
                                                               std::shared_ptr<core::DataBaseManager> database_manager) {
-    auto seller_name = database_manager->
+    auto seller_res = database_manager->
             MakeTransaction("SELECT user_name FROM data WHERE id = " +
                             std::to_string(
-                                    seller_id))[0][0].c_str();
+                                    seller_id));
 
-    auto buyer_name = database_manager->
+    auto buyer_res = database_manager->
             MakeTransaction("SELECT user_name FROM data WHERE id = " +
-                            std::to_string(buyer_id))[0][0].c_str();
+                            std::to_string(buyer_id));
+
+    std::string seller_name = seller_res[0][0].c_str();
+
+    std::string buyer_name = buyer_res[0][0].c_str();
 
     pqxx::row row1 = database_manager->
             MakeTransaction1("SELECT * FROM requests "
-                             "WHERE user_id=" + std::to_string(seller_id));
-    auto[seller_req_id, seller_user_id, seller_type_of_operation, seller_usd_count, seller_rub_price, seller_is_active] = row1.as<int, int, std::string,
+                             "WHERE id=" + std::to_string(request_id_seller));
+    auto[seller_req_id, seller_user_id, seller_type_of_operation, seller_usd_count, _1, seller_is_active] = row1.as<int, int, std::string,
             int, int, bool>();
 
     pqxx::row row2 = database_manager->
             MakeTransaction1("SELECT * FROM requests "
-                             "WHERE user_id=" + std::to_string(buyer_id));
-    auto[buyer_req_id, buyer_user_id, buyer_type_of_operation, buyer_usd_count, buyer_rub_price, buyer_is_active] = row2.as<int, int, std::string,
+                             "WHERE id=" + std::to_string(request_id_buyer));
+    auto[buyer_req_id, buyer_user_id, buyer_type_of_operation, buyer_usd_count, _2, buyer_is_active] = row2.as<int, int, std::string,
             int, int, bool>();
 
     database_manager->
@@ -480,8 +489,8 @@ network::Server::TransactionInfo network::closeTwoWayRequests(int seller_id, int
 
     database_manager->
             MakeTransaction(
-            "UPDATE data SET rub_balance = rub_balance - \'" +
-            std::to_string(seller_rub_price * usd_buying) + "\' WHERE id = " +
+            "UPDATE data SET rub_balance = rub_balance - " +
+            std::to_string(rub_price * usd_buying) + " WHERE id = " +
             std::to_string(buyer_id));
 
     database_manager->
@@ -493,10 +502,10 @@ network::Server::TransactionInfo network::closeTwoWayRequests(int seller_id, int
     database_manager->
             MakeTransaction(
             "UPDATE data SET rub_balance = rub_balance + " +
-            std::to_string(usd_buying * seller_rub_price) + " WHERE id = " +
+            std::to_string(usd_buying * rub_price) + " WHERE id = " +
             std::to_string(seller_id));
 
     database_manager->CommitTransactions();
 
-    return {buyer_req_id, buyer_usd_count, buyer_rub_price, seller_name, buyer_name};
+    return {buyer_req_id, buyer_usd_count, rub_price, seller_name, buyer_name};
 }

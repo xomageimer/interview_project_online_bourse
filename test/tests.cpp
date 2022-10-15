@@ -157,6 +157,10 @@ TEST (bourse, test5_lot_operations_2){
                                      active_sessions,
                                      active_users);
     EXPECT_TRUE(std::dynamic_pointer_cast<core::SuccessReqResponse>(resp.front()) != nullptr);
+    EXPECT_TRUE(resp.size() > 1);
+    EXPECT_TRUE(std::dynamic_pointer_cast<core::Report>(resp[1]) != nullptr);
+    EXPECT_EQ(resp[1]->getJson()["seller_name"].get<std::string>(), "test_name_3");
+    EXPECT_EQ(resp[1]->getJson()["buyer_name"].get<std::string>(), "test_name_1");
 
     auto res = db_manager->MakeTransaction("SELECT active FROM requests");
     for (auto row : res) {
@@ -242,10 +246,10 @@ TEST (bourse, test9_update_request){
                                                         {20, 61},
                                                         {20, 63},
                                                         {10, 62}};
+    size_t i = 0;
     for (auto a : resp.front()->getJson()["quotation"]) {
-
+        EXPECT_EQ((std::pair<int, int>{a[0], a[1]}), correct_quotation[i++]);
     }
-//    request_id
 }
 
 int main(int argc, char **argv) {

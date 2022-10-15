@@ -62,22 +62,12 @@ namespace core {
 
     struct UpdateResponse : public IResponse {
     public:
-        struct RequestInfo{
-            int id;
-            int user_id;
-            std::string type_of_operation;
-            int usd_count;
-            int rub_price;
-            bool active;
-        };
-
-        explicit UpdateResponse(std::vector<std::pair<int, int>> v, std::vector<RequestInfo> reqs) : usd_by_rub_(std::move(v)), requests_(std::move(reqs)) {}
+        explicit UpdateResponse(std::vector<std::pair<int, int>> v) : usd_by_rub_(std::move(v)) {}
 
         [[nodiscard]] nlohmann::json getJson() const override;
 
     private:
         std::vector<std::pair<int, int>> usd_by_rub_;
-        std::vector<RequestInfo> requests_;
     };
 
     struct BadResponse : public IResponse {

@@ -338,17 +338,7 @@ network::execRequest(const nlohmann::json &json, std::shared_ptr<network::ISessi
                 usd_by_rub.emplace_back(std::pair<int, int>(quotation[i][0].as<int>(), quotation[i][1].as<int>()));
             }
 
-            auto requests = database_manager->MakeTransaction(
-                    "SELECT * FROM requests WHERE user_id = " +
-                    std::to_string(active_users.at(json["user_id"])));
-            std::vector<core::UpdateResponse::RequestInfo> reqs;
-            for (auto req: requests) {
-                reqs.emplace_back(
-                        core::UpdateResponse::RequestInfo{req[0].as<int>(), req[1].as<int>(), req[2].as<std::string>(),
-                                                          req[3].as<int>(), req[4].as<int>(), req[5].as<bool>()});
-            }
-
-            new_responses.push_back(std::make_shared<core::UpdateResponse>(std::move(usd_by_rub), std::move(reqs)));
+            new_responses.push_back(std::make_shared<core::UpdateResponse>(std::move(usd_by_rub)));
             break;
         }
         default:

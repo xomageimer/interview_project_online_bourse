@@ -5,3 +5,6 @@
 	path = contrib/libpqxx
 	url = https://github.com/jtv/libpqxx.git
 	branch = 7.6
+[submodule "contrib/googletest"]
+	path = contrib/googletest
+	url = https://github.com/google/googletest.git

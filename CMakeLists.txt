@@ -84,3 +84,19 @@ target_link_libraries(bourse_server PUBLIC server)
 add_executable(bourse_client src/main_client.cpp)
 
 target_link_libraries(bourse_client PUBLIC client)
+
+add_subdirectory(
+        "contrib/googletest"
+        "googletest"
+)
+
+add_executable(tests test/tests.cpp)
+
+target_link_libraries(tests PUBLIC server gtest gtest_main gmock)
+
+include(CTest)
+
+enable_testing()
+add_test(
+        test tests
+)

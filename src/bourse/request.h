@@ -4,6 +4,8 @@
 #include "database_manager.h"
 
 #include "nlohmann/json.hpp"
+
+#include <deque>
 #include <memory>
 #include <utility>
 
@@ -52,6 +54,8 @@ namespace core {
 
     struct BalanceRequest : public IRequest {
     public:
+        using IRequest::IRequest;
+
         [[nodiscard]] nlohmann::json getJson() const override;
     };
 
@@ -97,7 +101,6 @@ namespace core {
     };
 
     std::shared_ptr<IRequest> makeRequest(std::string const & msg);
-
 }
 
 #endif //BOURSE_REQUEST_H

@@ -15,7 +15,7 @@
 
 using boost::asio::ip::tcp;
 
-namespace core{
+namespace core {
     struct IResponse;
 }
 
@@ -28,13 +28,27 @@ namespace network {
         max_length = 8'192
     };
 
-    struct Session : public std::enable_shared_from_this<Session> {
+    struct ISession {
+        virtual ~ISession() = default;
+
+        virtual void addResponsesQueue(std::shared_ptr<core::IResponse>) = 0;
+
+        std::string &getUserId() { return user_id_; }
+    protected:
+        std::string user_id_ = "John Doe";
+    };
+
+    struct Session : public ISession, public std::enable_shared_from_this<Session> {
     public:
-        Session(struct Server & server, boost::asio::io_context &io_context,
+        Session(struct Server &server, boost::asio::io_context &io_context,
                 boost::asio::ssl::context &context) : server_(server), socket_(io_context, context) {};
 
         ssl_socket::lowest_layer_type &socket() {
             return socket_.lowest_layer();
+        }
+
+        auto get() {
+            return shared_from_this();
         }
 
         void start();
@@ -43,33 +57,34 @@ namespace network {
 
         void doWrite();
 
-        std::string const & getUserId() const { return user_id_; }
+        Server &getServer() { return server_; }
 
-        Server & getServer() { return server_; }
+        void addResponsesQueue(std::shared_ptr<core::IResponse> new_resp) override {
+            bool write_in_progress = !pending_responses_.empty();
+            pending_responses_.push_back(new_resp);
+            if (!write_in_progress) {
+                doWrite();
+            }
+        }
 
     private:
-        response_queue execRequest(nlohmann::json const & json);
-
         void close();
 
-        Server & server_;
-
-        std::string user_id_ = "John Doe";
+        Server &server_;
         ssl_socket socket_;
 
         char data_[max_length]{};
 
         response_queue pending_responses_;
         char resp_buffer_[max_length]{};
+
         friend class Server;
     };
 
     struct Server {
     public:
-        Server(boost::asio::io_context &io_context, unsigned short port, std::shared_ptr<core::DataBaseManager> db_manager);
-
-    private:
-        void doAccept();
+        Server(boost::asio::io_context &io_context, unsigned short port,
+               std::shared_ptr<core::DataBaseManager> db_manager);
 
         struct TransactionInfo {
             int id;
@@ -78,9 +93,8 @@ namespace network {
             std::string seller_name;
             std::string buyer_name;
         };
-
-        TransactionInfo closeRequest(int seller_id, int buyer_id, int usd_buying, bool is_sellout);
-        TransactionInfo closeTwoWayRequests(int seller_id, int buyer_id, int usd_buying);
+    private:
+        void doAccept();
 
         boost::asio::io_context &io_context_;
         boost::asio::ip::tcp::acceptor acceptor_;
@@ -88,10 +102,21 @@ namespace network {
 
         std::shared_ptr<core::DataBaseManager> database_manager_;
 
-        std::unordered_map<int, std::weak_ptr<Session>> active_sessions_;
+        std::unordered_map<int, std::weak_ptr<ISession>> active_sessions_;
         std::unordered_map<std::string, int> active_users_;
+
         friend class Session;
     };
+
+    response_queue execRequest(nlohmann::json const &json,
+                               std::shared_ptr<network::ISession> owner_session,
+                               std::shared_ptr<core::DataBaseManager> database_manager,
+                               std::unordered_map<int, std::weak_ptr<network::ISession>> & active_sessions,
+                               std::unordered_map<std::string, int> & active_users);
+
+    Server::TransactionInfo closeRequest(int seller_id, int buyer_id, int usd_buying, bool is_sellout, std::shared_ptr<core::DataBaseManager> database_manager);
+
+    Server::TransactionInfo closeTwoWayRequests(int seller_id, int buyer_id, int usd_buying, std::shared_ptr<core::DataBaseManager> database_manager);
 }
 
 #endif //BOURSE_SERVER_H

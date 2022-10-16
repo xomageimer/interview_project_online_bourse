@@ -1,9 +1,12 @@
 #ifndef BOURSE_CLIENT_H
 #define BOURSE_CLIENT_H
 
+#include <QObject>
+
 #include <string>
 #include <optional>
 
+#include "gui/mainwindow.h"
 #include "bourse/request.h"
 
 #include <boost/bind.hpp>
@@ -11,6 +14,8 @@
 #include <boost/asio/ssl.hpp>
 
 #include <deque>
+
+struct MainWindow;
 
 namespace network {
 
@@ -21,7 +26,8 @@ namespace network {
         max_length = 8'192
     };
 
-    struct Client {
+    struct Client : public QObject{
+        Q_OBJECT
     public:
         Client(boost::asio::io_context &io_context,
                boost::asio::ssl::context &context,
@@ -36,7 +42,13 @@ namespace network {
 
         void setUserId(std::string const &user_id);
 
+        void setMainWindow(MainWindow* window);
+
         [[nodiscard]] std::string const &getUserId() const { return user_id_; }
+
+//        void execResponse(const nlohmann::json &json, MainWindow * mainWindow);
+    signals:
+        void response(const nlohmann::json & json);
 
     private:
         void doHandshake(const boost::system::error_code &error);
@@ -51,9 +63,9 @@ namespace network {
 
         request_queue_ pending_requests_;
         char msg_[max_length];
-    };
 
-    void execResponse(const nlohmann::json &json, network::Client &my_client);
+        MainWindow * main_window_;
+    };
 }
 
 #endif //BOURSE_CLIENT_H

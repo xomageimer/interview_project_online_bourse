@@ -1,7 +1,7 @@
 #include <iostream>
-#include <thread>
 
-#include "network/client.h"
+#include <QApplication>
+#include "gui/mainwindow.h"
 
 int main(int argc, char *argv[]) {
     try {
@@ -10,26 +10,13 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        boost::asio::io_context io_context;
+        QApplication a(argc, argv);
 
-        boost::asio::ip::tcp::resolver resolver(io_context);
-        boost::asio::ip::tcp::resolver::results_type endpoints =
-                resolver.resolve(argv[1], argv[2]);
+        MainWindow window{std::string(argv[1]), std::string(argv[2])};
+        window.setWindowTitle("Bourse Client");
+        window.resize(1000, 900);
 
-        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-        ctx.load_verify_file("server_certificate.crt");
-
-        network::Client c(io_context, ctx, endpoints);
-
-        std::thread t([&io_context]() { io_context.run(); });
-
-        std::string msg {};
-        while (std::cin >> msg && msg != "EXIT") {
-            c.write(core::makeRequest(msg));
-        }
-
-        c.close();
-        t.join();
+        return a.exec();
 
     } catch (std::exception &e) {
         std::cerr << "Exception: " << e.what() << "\n";

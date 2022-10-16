@@ -6,8 +6,7 @@
 #include "nlohmann/json.hpp"
 #include "request.h"
 
-
-namespace network{
+namespace network {
     struct Client;
 }
 
@@ -31,12 +30,14 @@ namespace core {
 
     struct SuccessReqResponse : public IResponse {
     public:
-        explicit SuccessReqResponse(int lot_request_id) : lot_request_id_(lot_request_id) {}
+        explicit SuccessReqResponse(int lot_request_id, bool to_cancel = false)
+            : lot_request_id_(lot_request_id), is_req_to_del_(to_cancel) {}
 
         [[nodiscard]] nlohmann::json getJson() const override;
 
     private:
         int lot_request_id_;
+        bool is_req_to_del_ = false;
     };
 
     struct BalanceResponse : public IResponse {
@@ -57,7 +58,7 @@ namespace core {
         [[nodiscard]] nlohmann::json getJson() const override;
 
     private:
-       std::string user_id_;
+        std::string user_id_;
     };
 
     struct UpdateResponse : public IResponse {
@@ -82,15 +83,9 @@ namespace core {
 
     struct Report : public IResponse {
     public:
-        explicit Report(int lot_request_id,
-                        int usd_count,
-                        int rub_price,
-                        std::string seller_id,
-                        std::string byuer_id) : lot_request_id_(lot_request_id),
-                                        usd_count_(usd_count),
-                                        rub_price_(rub_price),
-                                        seller_name_(std::move(seller_id)),
-                                        buyer_name_(std::move(byuer_id)) {}
+        explicit Report(int lot_request_id, int usd_count, int rub_price, std::string seller_id, std::string byuer_id)
+            : lot_request_id_(lot_request_id), usd_count_(usd_count), rub_price_(rub_price), seller_name_(std::move(seller_id)),
+              buyer_name_(std::move(byuer_id)) {}
 
         [[nodiscard]] nlohmann::json getJson() const override;
 
@@ -101,6 +96,6 @@ namespace core {
         std::string seller_name_;
         std::string buyer_name_;
     };
-}
+} // namespace core
 
-#endif //BOURSE_RESPONSE_H
+#endif // BOURSE_RESPONSE_H

@@ -8,6 +8,7 @@ nlohmann::json core::SuccessReqResponse::getJson() const {
     nlohmann::json json;
     json["response_type"] = SUCCESS_SET_RESPONSE;
     json["lot_id"] = lot_request_id_;
+    json["is_to_cancel"] = is_req_to_del_;
     return std::move(json);
 }
 

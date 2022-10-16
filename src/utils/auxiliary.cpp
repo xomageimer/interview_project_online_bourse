@@ -29,6 +29,14 @@ std::string unquoted(const std::string & str) {
     return str;
 }
 
+std::time_t toUnixTime(const std::string &str) {
+    std::tm t{};
+    std::istringstream ss(str);
+
+    ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
+    return mktime(&t);
+}
+
 random_generator &random_generator::Random() {
     static random_generator rg;
     return rg;

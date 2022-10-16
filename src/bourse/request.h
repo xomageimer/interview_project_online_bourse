@@ -36,7 +36,7 @@ namespace core {
 
     struct CreateLotRequest : public IRequest {
     public:
-        enum class OperationType {
+        enum OperationType {
             BUY_USD,
             SELL_USD
         };

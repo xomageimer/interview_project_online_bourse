@@ -12,6 +12,8 @@ std::string GetSHA1(const std::string &p_arg);
 
 std::string unquoted(const std::string & str);
 
+std::time_t toUnixTime(std::string const & str);
+
 struct random_generator : public std::mt19937_64 {
 public:
     static random_generator &Random();

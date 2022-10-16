@@ -2,6 +2,9 @@
 
 #include <utility>
 
+#include "gui/mainwindow.h"
+#include "gui/authwindow.h"
+
 #include "bourse/response.h"
 #include "logger.h"
 
@@ -77,8 +80,7 @@ void network::Client::doRead() {
                                    size_t bytes_transferred) {
                                 if (!ec) {
                                     auto json_msg = nlohmann::json::parse(std::string(data_, bytes_transferred));
-                                    network::execResponse(json_msg,
-                                                          *this);
+                                    emit response(json_msg);
                                     doRead();
                                 } else {
                                     socket_.lowest_layer().close();
@@ -95,31 +97,42 @@ void network::Client::close() {
     boost::asio::post(socket_.get_executor(), [this]() { socket_.lowest_layer().close(); });
 }
 
-void network::execResponse(const nlohmann::json &json, network::Client &my_client) {
-    LOG("get to response by id ", json["response_type"]);
-    switch (json["response_type"].get<int>()) {
-        case core::ResponseAction::SUCCESS_SET_RESPONSE:
-            LOG("request type is success setting");
-            break;
-        case core::ResponseAction::BAD_RESPONSE:
-            LOG("request type is bad response");
-            break;
-        case core::ResponseAction::GET_BALANCE_RESPONSE:
-            LOG("request type is get balance");
-            break;
-        case core::ResponseAction::AUTHORIZATION_RESPONSE:
-            LOG("request type is authorization");
-            my_client.setUserId(json["user_id_"]);
-            std::cerr << "authorized: " << my_client.getUserId() << std::endl;
-            break;
-        case core::ResponseAction::UPDATE_RESPONSE:
-            LOG("request type is update quotation");
-            break;
-        case core::ResponseAction::REPORT:
-            LOG("request type is reporting");
-            break;
-        default:
-            LOG("wrong response type, mb server was hacking!");
-            break;
-    }
+void network::Client::setMainWindow(MainWindow *window) {
+    main_window_ = window;
 }
+
+//void network::Client::execResponse(const nlohmann::json &json, MainWindow * mainWindow) {
+//    LOG("get to response by id ", json["response_type"]);
+//    switch (json["response_type"].get<int>()) {
+//        case core::ResponseAction::SUCCESS_SET_RESPONSE:
+//            LOG("request type is success setting");
+//            break;
+//        case core::ResponseAction::BAD_RESPONSE:
+//            LOG("request type is bad response");
+//            mainWindow->showBadMessage(json["message"].get<std::string>());
+//            break;
+//        case core::ResponseAction::GET_BALANCE_RESPONSE:
+//            LOG("request type is get balance");
+//            break;
+//        case core::ResponseAction::AUTHORIZATION_RESPONSE:
+//            LOG("request type is auth");
+//            mainWindow->getClient()->setUserId(json["user_id"].get<std::string>());
+//            mainWindow->show();
+//            mainWindow->getAuthWindow()->hide();
+//            break;
+//        case core::ResponseAction::UPDATE_RESPONSE: {
+//            std::vector<std::pair<int, int>> quotation;
+//            for (auto & a : json["quotation"]){
+//                quotation.emplace_back(a[0], a[1]);
+//            }
+//            mainWindow->updateCharts(quotation);
+//            break;
+//        }
+//        case core::ResponseAction::REPORT:
+//            LOG("request type is reporting");
+//            break;
+//        default:
+//            std::cerr << "wrong response type, mb server was hacking!" << std::endl;
+//            break;
+//    }
+//}

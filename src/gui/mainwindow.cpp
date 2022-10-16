@@ -184,7 +184,7 @@ void MainWindow::execResponse(const nlohmann::json &json) {
             break;
         }
         case core::ResponseAction::REPORT: {
-
+            std::cerr << "REPORT" << std::endl;
             int row = ReportModel->rowCount();
             ReportModel->insertRows(row, 1);
             QModelIndex index = ReportModel->index(row);
@@ -194,8 +194,10 @@ void MainWindow::execResponse(const nlohmann::json &json) {
                                               json["buyer_name"].get<std::string>() + " at " +
                                               std::to_string(json["rub_price"].get<int>()) + "₽ apiece"));
             auto idx = json["lot_id"].get<int>();
-            QModelIndex index_lot = Model->index(lot_by_idx.at(idx));
-            Model->setData(index_lot, ReportModel->data(index_lot).toString() + QString::fromStdString(" : competed!"));
+            if (lot_by_idx.count(idx)) {
+                QModelIndex index_lot = Model->index(lot_by_idx.at(idx));
+                Model->setData(index_lot, ReportModel->data(index_lot).toString() + QString::fromStdString(" : completed!"));
+            }
             break;
         }
         default:

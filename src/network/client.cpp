@@ -100,39 +100,3 @@ void network::Client::close() {
 void network::Client::setMainWindow(MainWindow *window) {
     main_window_ = window;
 }
-
-//void network::Client::execResponse(const nlohmann::json &json, MainWindow * mainWindow) {
-//    LOG("get to response by id ", json["response_type"]);
-//    switch (json["response_type"].get<int>()) {
-//        case core::ResponseAction::SUCCESS_SET_RESPONSE:
-//            LOG("request type is success setting");
-//            break;
-//        case core::ResponseAction::BAD_RESPONSE:
-//            LOG("request type is bad response");
-//            mainWindow->showBadMessage(json["message"].get<std::string>());
-//            break;
-//        case core::ResponseAction::GET_BALANCE_RESPONSE:
-//            LOG("request type is get balance");
-//            break;
-//        case core::ResponseAction::AUTHORIZATION_RESPONSE:
-//            LOG("request type is auth");
-//            mainWindow->getClient()->setUserId(json["user_id"].get<std::string>());
-//            mainWindow->show();
-//            mainWindow->getAuthWindow()->hide();
-//            break;
-//        case core::ResponseAction::UPDATE_RESPONSE: {
-//            std::vector<std::pair<int, int>> quotation;
-//            for (auto & a : json["quotation"]){
-//                quotation.emplace_back(a[0], a[1]);
-//            }
-//            mainWindow->updateCharts(quotation);
-//            break;
-//        }
-//        case core::ResponseAction::REPORT:
-//            LOG("request type is reporting");
-//            break;
-//        default:
-//            std::cerr << "wrong response type, mb server was hacking!" << std::endl;
-//            break;
-//    }
-//}

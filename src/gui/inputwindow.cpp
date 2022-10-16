@@ -36,13 +36,11 @@ void InputWindow::on_loginButton_clicked()
 {
     usd_count = ui->loginInput->text().toStdString();
     rub_price = ui->passwordInput->text().toStdString();
+    emit set_price(std::stoi(usd_count), std::stoi(rub_price));
+    this->hide();
 }
 
 InputWindow::~InputWindow()
 {
     delete ui;
-}
-
-std::pair<std::string, std::string> InputWindow::getData() const {
-    return {usd_count, rub_price};
 }

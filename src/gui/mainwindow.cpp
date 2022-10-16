@@ -39,9 +39,9 @@ MainWindow::MainWindow(const std::string &host, const std::string &port, QWidget
     ListView->setModel(Model);
     ListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    SellButton = new QPushButton("Купить");
+    SellButton = new QPushButton("Продать");
     DeleteButton = new QPushButton("Отменить");
-    BuyButton = new QPushButton("Продать");
+    BuyButton = new QPushButton("Купить");
 
     ui->grid_Layout->addWidget(ListView, 2, 0, 2, 3);
     ui->grid_Layout->addWidget(SellButton, 4, 0);
@@ -81,12 +81,9 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::sell_clicked() {
+    input_window->disconnect();
+    connect(input_window, &InputWindow::set_price, this, &MainWindow::sell);
     input_window->show();
-    auto [usd, price] = input_window->getData();
-    auto req = std::make_shared<core::CreateLotRequest>(
-        getClient()->getUserId(), std::stoi(usd), std::stoi(price), core::CreateLotRequest::OperationType::SELL_USD);
-    to_add_requests.emplace(Model->rowCount(), req);
-    getClient()->write(std::move(req));
 }
 
 void MainWindow::delete_clicked() {
@@ -95,17 +92,16 @@ void MainWindow::delete_clicked() {
 }
 
 void MainWindow::buy_clicked() {
+    input_window->disconnect();
+    connect(input_window, &InputWindow::set_price, this, &MainWindow::buy);
     input_window->show();
-    auto [usd, price] = input_window->getData();
-    auto req = std::make_shared<core::CreateLotRequest>(
-        getClient()->getUserId(), std::stoi(usd), std::stoi(price), core::CreateLotRequest::OperationType::BUY_USD);
-    to_add_requests.emplace(Model->rowCount(), req);
-    getClient()->write(std::move(req));
 }
 
 void MainWindow::on_updateButton_clicked() {
     chart->removeAllSeries();
-    auto req = std::make_shared<core::UpdateRequest>(getClient()->getUserId());
+    std::shared_ptr<core::IRequest> req = std::make_shared<core::UpdateRequest>(getClient()->getUserId());
+    getClient()->write(std::move(req));
+    req = std::make_shared<core::BalanceRequest>(getClient()->getUserId());
     getClient()->write(std::move(req));
 }
 
@@ -131,7 +127,7 @@ void MainWindow::updateCharts(const std::vector<std::pair<int, int>> &v) {
     chart->legend()->hide();
     chart->addSeries(series);
     chart->createDefaultAxes();
-    chart->setTitle("Timestamp / RUB price");
+    chart->setTitle("₽ price / Timestamp");
 
     chartView->show();
 }
@@ -141,15 +137,17 @@ void MainWindow::execResponse(const nlohmann::json &json) {
         case core::ResponseAction::SUCCESS_SET_RESPONSE: {
             auto idx = json["lot_id"].get<int>();
             if (json["is_to_cancel"].get<bool>()) {
+                std::cerr << "cancel" << std::endl;
                 Model->removeRows(lot_by_idx.at(idx), 1);
                 idx_by_lot.erase(lot_by_idx.at(idx));
                 lot_by_idx.erase(idx);
             } else {
                 int row = Model->rowCount();
+                std::cerr << "add req : " << row << std::endl;
                 Model->insertRows(row, 1);
                 QModelIndex index = Model->index(row);
                 ListView->setCurrentIndex(index);
-                auto lot_data_json = to_add_requests.at(idx)->getJson();
+                auto lot_data_json = to_add_requests.at(row)->getJson();
                 Model->setData(index, QString::fromStdString(std::string("Request to ") +
                                                              std::string((lot_data_json["request_type"].get<int>() ==
                                                                              core::CreateLotRequest::OperationType::SELL_USD)
@@ -159,22 +157,27 @@ void MainWindow::execResponse(const nlohmann::json &json) {
                                                              std::to_string(lot_data_json["rub_price"].get<int>()) + "₽"));
                 lot_by_idx.emplace(idx, row);
                 idx_by_lot.emplace(row, idx);
+                to_add_requests.erase(row);
             }
             break;
         }
         case core::ResponseAction::BAD_RESPONSE:
+            std::cerr << "get bad" << std::endl;
             showBadMessage(json["message"].get<std::string>());
             break;
         case core::ResponseAction::GET_BALANCE_RESPONSE:
+            std::cerr << "get balance" << std::endl;
             ui->label_2->setText(QString::fromStdString("Balance: " + std::to_string(json["usd_count"].get<int>()) + "$\t" +
                                                         std::to_string(json["rub_balance"].get<int>()) + "₽"));
             break;
         case core::ResponseAction::AUTHORIZATION_RESPONSE:
+            std::cerr << "auth" << std::endl;
             getClient()->setUserId(unquoted(json["user_id"].get<std::string>()));
             show();
             getAuthWindow()->hide();
             break;
         case core::ResponseAction::UPDATE_RESPONSE: {
+            std::cerr << "update" << std::endl;
             std::vector<std::pair<int, int>> quotation;
             for (auto &a : json["quotation"]) {
                 quotation.emplace_back(a[0], a[1]);
@@ -183,6 +186,7 @@ void MainWindow::execResponse(const nlohmann::json &json) {
             break;
         }
         case core::ResponseAction::REPORT: {
+            std::cerr << "report" << std::endl;
             int row = ReportModel->rowCount();
             ReportModel->insertRows(row, 1);
             QModelIndex index = ReportModel->index(row);
@@ -191,10 +195,27 @@ void MainWindow::execResponse(const nlohmann::json &json) {
                                               " sold " + std::to_string(json["usd_count"].get<int>()) + "$ to " +
                                               json["buyer_name"].get<std::string>() + " at " +
                                               std::to_string(json["rub_price"].get<int>()) + "₽ apiece"));
+            auto idx = json["lot_id"].get<int>();
+            QModelIndex index_lot = Model->index(lot_by_idx.at(idx));
+            Model->setData(index_lot, ReportModel->data(index_lot).toString() + QString::fromStdString(" : competed!"));
             break;
         }
         default:
             showBadMessage("wrong response type, mb server was hacking!");
             break;
     }
+}
+
+void MainWindow::sell(int usd, int price) {
+    auto req = std::make_shared<core::CreateLotRequest>(
+        getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::SELL_USD);
+    to_add_requests.emplace(Model->rowCount(), req);
+    getClient()->write(std::move(req));
+}
+
+void MainWindow::buy(int usd, int price) {
+    auto req = std::make_shared<core::CreateLotRequest>(
+        getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::BUY_USD);
+    to_add_requests.emplace(Model->rowCount(), req);
+    getClient()->write(std::move(req));
 }

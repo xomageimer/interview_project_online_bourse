@@ -24,7 +24,8 @@ public:
     explicit InputWindow(QWidget *parent = 0);
     ~InputWindow();
 
-    [[nodiscard]] std::pair<std::string, std::string> getData() const;
+signals:
+    void set_price(int usd, int price);
 
 private slots:
     void on_loginButton_clicked();
@@ -32,7 +33,7 @@ private slots:
 private:
     Ui::InputWindow *ui;
 
-    std::string usd_count, rub_price;
+    std::string usd_count {"1"}, rub_price{"65"};
 };
 
 #endif // INPUTWINDOW_H

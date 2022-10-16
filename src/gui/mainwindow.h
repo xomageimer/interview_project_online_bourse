@@ -93,8 +93,12 @@ private:
     std::map<int, int> lot_by_idx;
 public slots:
     void sell_clicked();
+    void sell(int usd, int price);
+
     void delete_clicked();
+
     void buy_clicked();
+    void buy(int usd, int price);
 };
 
 #endif // MAINWINDOW_H

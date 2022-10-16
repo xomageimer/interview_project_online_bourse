@@ -112,11 +112,11 @@ network::response_queue network::execRequest(const nlohmann::json &json, std::sh
                     break;
                 }
 
-                auto matching_requests = database_manager->MakeTransaction("SELECT * FROM requests "
-                                                                           "WHERE rub_price >= " +
-                                                                           std::to_string(json["rub_price"].get<int>()) +
-                                                                           " AND type_of_operation = \'buy\' AND active = true "
-                                                                           "ORDER BY rub_price DESC LIMIT 100");
+                auto matching_requests = database_manager->MakeTransaction(
+                    "SELECT * FROM requests "
+                    "WHERE rub_price >= " +
+                    std::to_string(json["rub_price"].get<int>()) + " AND type_of_operation = \'buy\' AND active = true AND user_id != " +
+                    std::to_string(active_users.at(json["user_id"])) + "ORDER BY rub_price DESC LIMIT 100");
                 if (matching_requests.empty()) break;
 
                 for (int i = 0; i < matching_requests.size() && usd_selling != json["usd_count"].get<int>(); i++) {
@@ -170,11 +170,11 @@ network::response_queue network::execRequest(const nlohmann::json &json, std::sh
                     break;
                 }
 
-                auto matching_requests = database_manager->MakeTransaction("SELECT * FROM requests "
-                                                                           "WHERE rub_price <= " +
-                                                                           std::to_string(json["rub_price"].get<int>()) +
-                                                                           " AND type_of_operation = \'sell\' AND active = true "
-                                                                           "ORDER BY rub_price DESC LIMIT 100");
+                auto matching_requests = database_manager->MakeTransaction(
+                    "SELECT * FROM requests "
+                    "WHERE rub_price <= " +
+                    std::to_string(json["rub_price"].get<int>()) + " AND type_of_operation = \'sell\' AND active = true  AND user_id != " +
+                    std::to_string(active_users.at(json["user_id"])) + "ORDER BY rub_price DESC LIMIT 100");
                 if (matching_requests.empty()) break;
 
                 for (int i = 0; i < matching_requests.size() && usd_buying != json["usd_count"].get<int>(); i++) {
@@ -283,21 +283,22 @@ network::response_queue network::execRequest(const nlohmann::json &json, std::sh
             if (!active_users.count(json["user_id"])) return {std::make_shared<core::BadResponse>("not authorized")};
 
             auto rub_prices = database_manager->MakeTransaction("SELECT rub_price FROM requests WHERE id = ANY (\n"
-                                                               "    SELECT request_id FROM (\n"
-                                                               "        SELECT * FROM deal_history ORDER BY date DESC LIMIT 100\n"
-                                                               "    ) sub\n"
-                                                               "    ORDER BY id ASC\n"
-                                                               ")");
+                                                                "    SELECT request_id FROM (\n"
+                                                                "        SELECT * FROM deal_history ORDER BY date DESC LIMIT 100\n"
+                                                                "    ) sub\n"
+                                                                "    ORDER BY id ASC\n"
+                                                                ")");
 
             auto dates = database_manager->MakeTransaction("    SELECT date FROM (\n"
-                                                          "        SELECT * FROM deal_history ORDER BY date DESC LIMIT 100\n"
-                                                          "    ) sub\n"
-                                                          "    ORDER BY id ASC\n");
+                                                           "        SELECT * FROM deal_history ORDER BY date DESC LIMIT 100\n"
+                                                           "    ) sub\n"
+                                                           "    ORDER BY id ASC\n");
 
             std::vector<std::pair<int, int>> usd_by_rub;
             usd_by_rub.reserve(rub_prices.size());
             for (size_t i = 0; i < rub_prices.size(); i++) {
-                usd_by_rub.emplace_back(std::pair<int, int>(static_cast<int>(toUnixTime(dates[i][0].as<std::string>())), rub_prices[i][0].as<int>()));
+                usd_by_rub.emplace_back(
+                    std::pair<int, int>(static_cast<int>(toUnixTime(dates[i][0].as<std::string>())), rub_prices[i][0].as<int>()));
             }
 
             new_responses.push_back(std::make_shared<core::UpdateResponse>(std::move(usd_by_rub)));

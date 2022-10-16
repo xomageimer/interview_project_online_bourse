@@ -3,6 +3,7 @@
 
 #include <QDebug>
 
+#include "inputwindow.h"
 #include "authwindow.h"
 
 #include <iostream>
@@ -12,7 +13,7 @@
 #include "utils/auxiliary.h"
 
 MainWindow::MainWindow(const std::string &host, const std::string &port, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), auth_window(new AuthWindow(*this)) {
+    : QMainWindow(parent), ui(new Ui::MainWindow), auth_window(new AuthWindow(*this)), input_window(new InputWindow()) {
     boost::asio::ip::tcp::resolver resolver(io_context);
     boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, port);
 
@@ -37,7 +38,6 @@ MainWindow::MainWindow(const std::string &host, const std::string &port, QWidget
     Model->setStringList(List);
     ListView->setModel(Model);
     ListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    connect(ListView, SIGNAL(clicked(QModelIndex)), SLOT(showSelectedItem(QModelIndex)));
 
     SellButton = new QPushButton("Купить");
     DeleteButton = new QPushButton("Отменить");
@@ -77,26 +77,30 @@ MainWindow::~MainWindow() {
     context_worker.join();
     delete ui;
     delete auth_window;
-}
-
-void MainWindow::showSelectedItem(QModelIndex mIndex) {
-    return;
+    delete input_window;
 }
 
 void MainWindow::sell_clicked() {
-    int row = Model->rowCount(); // в числовую переменную заносим общее количество строк
-    Model->insertRows(row, 1);   // добавляем строки, количеством 1 шт.
-    QModelIndex index = Model->index(row); // создаем ссылку на элемент модели
-    ListView->setCurrentIndex(index);      // передаем этот индекс ListView
-    ListView->edit(index); // переводим курсор на указанную позицию для ожидания ввода данных
+    input_window->show();
+    auto [usd, price] = input_window->getData();
+    auto req = std::make_shared<core::CreateLotRequest>(
+        getClient()->getUserId(), std::stoi(usd), std::stoi(price), core::CreateLotRequest::OperationType::SELL_USD);
+    to_add_requests.emplace(Model->rowCount(), req);
+    getClient()->write(std::move(req));
 }
 
 void MainWindow::delete_clicked() {
-    Model->removeRows(ListView->currentIndex().row(), 1);
+    auto req = std::make_shared<core::CancelRequest>(getClient()->getUserId(), idx_by_lot.at(ListView->currentIndex().row()));
+    getClient()->write(std::move(req));
 }
 
 void MainWindow::buy_clicked() {
-    Model->sort(0);
+    input_window->show();
+    auto [usd, price] = input_window->getData();
+    auto req = std::make_shared<core::CreateLotRequest>(
+        getClient()->getUserId(), std::stoi(usd), std::stoi(price), core::CreateLotRequest::OperationType::BUY_USD);
+    to_add_requests.emplace(Model->rowCount(), req);
+    getClient()->write(std::move(req));
 }
 
 void MainWindow::on_updateButton_clicked() {
@@ -137,7 +141,9 @@ void MainWindow::execResponse(const nlohmann::json &json) {
         case core::ResponseAction::SUCCESS_SET_RESPONSE: {
             auto idx = json["lot_id"].get<int>();
             if (json["is_to_cancel"].get<bool>()) {
-                Model->removeRows(json["lot_id"].get<int>(), 1);
+                Model->removeRows(lot_by_idx.at(idx), 1);
+                idx_by_lot.erase(lot_by_idx.at(idx));
+                lot_by_idx.erase(idx);
             } else {
                 int row = Model->rowCount();
                 Model->insertRows(row, 1);
@@ -145,9 +151,14 @@ void MainWindow::execResponse(const nlohmann::json &json) {
                 ListView->setCurrentIndex(index);
                 auto lot_data_json = to_add_requests.at(idx)->getJson();
                 Model->setData(index, QString::fromStdString(std::string("Request to ") +
-                                          std::string((lot_data_json["request_type"].get<int>() == core::CreateLotRequest::OperationType::SELL_USD)
-                                           ? "sell " : "buy ") + std::to_string(lot_data_json["usd_count"].get<int>())
-                                          + "$ for " + std::to_string(lot_data_json["rub_price"].get<int>()) + "₽"));
+                                                             std::string((lot_data_json["request_type"].get<int>() ==
+                                                                             core::CreateLotRequest::OperationType::SELL_USD)
+                                                                             ? "sell "
+                                                                             : "buy ") +
+                                                             std::to_string(lot_data_json["usd_count"].get<int>()) + "$ for " +
+                                                             std::to_string(lot_data_json["rub_price"].get<int>()) + "₽"));
+                lot_by_idx.emplace(idx, row);
+                idx_by_lot.emplace(row, idx);
             }
             break;
         }
@@ -171,9 +182,17 @@ void MainWindow::execResponse(const nlohmann::json &json) {
             updateCharts(quotation);
             break;
         }
-        case core::ResponseAction::REPORT:
-
+        case core::ResponseAction::REPORT: {
+            int row = ReportModel->rowCount();
+            ReportModel->insertRows(row, 1);
+            QModelIndex index = ReportModel->index(row);
+            ReportModel->setData(
+                index, QString::fromStdString(std::to_string(json["lot_id"].get<int>()) + " : " + json["seller_name"].get<std::string>() +
+                                              " sold " + std::to_string(json["usd_count"].get<int>()) + "$ to " +
+                                              json["buyer_name"].get<std::string>() + " at " +
+                                              std::to_string(json["rub_price"].get<int>()) + "₽ apiece"));
             break;
+        }
         default:
             showBadMessage("wrong response type, mb server was hacking!");
             break;

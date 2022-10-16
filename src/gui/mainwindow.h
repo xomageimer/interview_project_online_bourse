@@ -38,6 +38,7 @@ namespace Ui {
 class MainWindow;
 }
 class AuthWindow;
+class InputWindow;
 namespace network{
     struct Client;
 }
@@ -75,6 +76,7 @@ private:
     QStringList List;
 
     AuthWindow * auth_window;
+    InputWindow * input_window;
 
     boost::asio::io_context io_context;
     std::shared_ptr<network::Client> client;
@@ -87,11 +89,12 @@ private:
     QStringListModel *ReportModel;
 
     std::map<int, std::shared_ptr<core::CreateLotRequest>> to_add_requests;
+    std::map<int, int> idx_by_lot;
+    std::map<int, int> lot_by_idx;
 public slots:
     void sell_clicked();
     void delete_clicked();
     void buy_clicked();
-    void showSelectedItem(QModelIndex mIndex);
 };
 
 #endif // MAINWINDOW_H

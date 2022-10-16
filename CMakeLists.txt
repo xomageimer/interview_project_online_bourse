@@ -74,13 +74,21 @@ set(auth_window src/gui/authwindow.h src/gui/authwindow.cpp)
 
 qt5_wrap_ui(auth_window ui_forms/authwindow.ui)
 
+set(input_window src/gui/inputwindow.h src/gui/inputwindow.cpp)
+
+qt5_wrap_ui(input_window ui_forms/inputwindow.ui)
+
 add_library(authwindow SHARED ${auth_window})
 
 add_library(mainwindow SHARED ${main_window})
 
+add_library(inputwindow SHARED ${input_window})
+
+target_link_libraries(inputwindow PUBLIC Qt5::Core Qt5::Charts Qt5::Widgets)
+
 target_link_libraries(authwindow PUBLIC Qt5::Core Qt5::Charts Qt5::Widgets)
 
-target_link_libraries(mainwindow PUBLIC authwindow Qt5::Core Qt5::Charts Qt5::Widgets)
+target_link_libraries(mainwindow PUBLIC authwindow inputwindow Qt5::Core Qt5::Charts Qt5::Widgets)
 
 add_library(client SHARED src/network/client.h src/network/client.cpp)
 

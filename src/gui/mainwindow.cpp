@@ -137,13 +137,11 @@ void MainWindow::execResponse(const nlohmann::json &json) {
         case core::ResponseAction::SUCCESS_SET_RESPONSE: {
             auto idx = json["lot_id"].get<int>();
             if (json["is_to_cancel"].get<bool>()) {
-                std::cerr << "cancel" << std::endl;
                 Model->removeRows(lot_by_idx.at(idx), 1);
                 idx_by_lot.erase(lot_by_idx.at(idx));
                 lot_by_idx.erase(idx);
             } else {
                 int row = Model->rowCount();
-                std::cerr << "add req : " << row << std::endl;
                 Model->insertRows(row, 1);
                 QModelIndex index = Model->index(row);
                 ListView->setCurrentIndex(index);
@@ -162,22 +160,22 @@ void MainWindow::execResponse(const nlohmann::json &json) {
             break;
         }
         case core::ResponseAction::BAD_RESPONSE:
-            std::cerr << "get bad" << std::endl;
+
             showBadMessage(json["message"].get<std::string>());
             break;
         case core::ResponseAction::GET_BALANCE_RESPONSE:
-            std::cerr << "get balance" << std::endl;
+
             ui->label_2->setText(QString::fromStdString("Balance: " + std::to_string(json["usd_count"].get<int>()) + "$\t" +
                                                         std::to_string(json["rub_balance"].get<int>()) + "₽"));
             break;
         case core::ResponseAction::AUTHORIZATION_RESPONSE:
-            std::cerr << "auth" << std::endl;
+
             getClient()->setUserId(unquoted(json["user_id"].get<std::string>()));
             show();
             getAuthWindow()->hide();
             break;
         case core::ResponseAction::UPDATE_RESPONSE: {
-            std::cerr << "update" << std::endl;
+
             std::vector<std::pair<int, int>> quotation;
             for (auto &a : json["quotation"]) {
                 quotation.emplace_back(a[0], a[1]);
@@ -186,7 +184,7 @@ void MainWindow::execResponse(const nlohmann::json &json) {
             break;
         }
         case core::ResponseAction::REPORT: {
-            std::cerr << "report" << std::endl;
+
             int row = ReportModel->rowCount();
             ReportModel->insertRows(row, 1);
             QModelIndex index = ReportModel->index(row);
@@ -207,15 +205,15 @@ void MainWindow::execResponse(const nlohmann::json &json) {
 }
 
 void MainWindow::sell(int usd, int price) {
-    auto req = std::make_shared<core::CreateLotRequest>(
-        getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::SELL_USD);
+    auto req =
+        std::make_shared<core::CreateLotRequest>(getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::SELL_USD);
     to_add_requests.emplace(Model->rowCount(), req);
     getClient()->write(std::move(req));
 }
 
 void MainWindow::buy(int usd, int price) {
-    auto req = std::make_shared<core::CreateLotRequest>(
-        getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::BUY_USD);
+    auto req =
+        std::make_shared<core::CreateLotRequest>(getClient()->getUserId(), usd, price, core::CreateLotRequest::OperationType::BUY_USD);
     to_add_requests.emplace(Model->rowCount(), req);
     getClient()->write(std::move(req));
 }

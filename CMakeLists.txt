@@ -43,7 +43,7 @@ include_directories(src/utils)
 
 add_library(helper SHARED src/utils/logger.cpp src/utils/logger.h src/utils/auxiliary.h src/utils/auxiliary.cpp)
 
-#add_compile_definitions(FILE_LOGGER)
+add_compile_definitions(CONSOLE_LOGGER)
 
 add_library(bourse_core SHARED src/bourse/request.h src/bourse/request.cpp src/bourse/response.h src/bourse/response.cpp)
 
@@ -112,13 +112,14 @@ add_executable(bourse_client src/main_client.cpp)
 
 target_link_libraries(bourse_client PUBLIC client)
 
-set_target_properties(bourse_server PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
+set_target_properties(bourse_server PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/server)
 
-set_target_properties(bourse_client PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
+set_target_properties(bourse_client PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/client)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dh2048.pem ${CMAKE_BINARY_DIR}/bin/dh2048.pem COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/server.key ${CMAKE_BINARY_DIR}/bin/server.key COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/server_certificate.crt ${CMAKE_BINARY_DIR}/bin/server_certificate.crt COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dh2048.pem ${CMAKE_BINARY_DIR}/bin/server/dh2048.pem COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/server.key ${CMAKE_BINARY_DIR}/bin/server/server.key COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/server_certificate.crt ${CMAKE_BINARY_DIR}/bin/server/server_certificate.crt COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/server_certificate.crt ${CMAKE_BINARY_DIR}/bin/client/server_certificate.crt COPYONLY)
 
 add_subdirectory(
         "contrib/googletest"

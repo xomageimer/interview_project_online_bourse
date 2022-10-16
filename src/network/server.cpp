@@ -246,7 +246,7 @@ network::response_queue network::execRequest(const nlohmann::json &json, std::sh
         }
         case core::RequestAction::REGISTER_REQUEST: {
             LOG("request type is registration");
-            std::cerr << "request type is registration" << std::endl;
+
             auto name = database_manager->MakeTransaction("SELECT id FROM data WHERE user_name=\'" + unquoted(json["name"].dump()) + "\'");
             if (name.empty()) {
                 database_manager->MakeTransaction("INSERT INTO data (user_name, password, usd_count, rub_balance) values(\'" +
@@ -259,7 +259,7 @@ network::response_queue network::execRequest(const nlohmann::json &json, std::sh
         }
         case core::RequestAction::AUTHORIZATION_REQUEST: {
             LOG("request type is authorization");
-            std::cerr << "request type is authorization" << std::endl;
+
             auto user_data = database_manager->MakeTransaction(
                 "SELECT id, password FROM data WHERE user_name=\'" + unquoted(json["name"].dump()) + "\'");
             if (user_data.empty() || strcmp(user_data[0][1].c_str(), GetSHA1(unquoted(json["password"].dump())).c_str()) != 0) {
@@ -323,7 +323,7 @@ network::Server::TransactionInfo network::closeRequest(
     std::string buyer_name = buyer_res[0][0].c_str();
 
     pqxx::row row = database_manager->MakeTransaction1("SELECT * FROM requests "
-                                                       "WHERE user_id=" +
+                                                       "WHERE id=" +
                                                        std::to_string(request_id));
     auto [id, user_id, type_of_operation, usd_count, _, is_active] = row.as<int, int, std::string, int, int, bool>();
 
